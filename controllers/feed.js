@@ -44,7 +44,7 @@ exports.createPost = (req, res, next) => {
 				post: result,
 			});
 		})
-		.catch((err) => {
+		.catch((errors) => {
 			if (!errors.statusCode) {
 				errors.statusCode = 500;
 			}
@@ -63,7 +63,7 @@ exports.getPost = (req, res, next) => {
 			}
 			res.status(200).json({ message: 'Post fetched.' });
 		})
-		.catch((err) => {
+		.catch((errors) => {
 			if (!errors.statusCode) {
 				errors.statusCode = 500;
 			}
@@ -108,7 +108,32 @@ exports.updatePost = (req, res, next) => {
 		.then((result) => {
 			res.status(200).json({ message: 'Post updated.', post: result });
 		})
-		.catch((err) => {
+		.catch((errors) => {
+			if (!errors.statusCode) {
+				errors.statusCode = 500;
+			}
+			next(err);
+		});
+};
+
+exports.deletePost = (req, res, next) => {
+	const postId = req.params.postId;
+	Post.findById(postId)
+		.then((post) => {
+			if (!post) {
+				const error = new Error('Could Not find any post.');
+				error.statusCode = 404;
+				throw error;
+			}
+			//Check if the loggedIn user created this post
+			clearImage(post.imageUrl);
+			return Post.findByIdAndRemove(postId);
+		})
+		.then((result) => {
+			console.log(result);
+			res.status(200).json({ message: 'Deleted post.' });
+		})
+		.catch((errors) => {
 			if (!errors.statusCode) {
 				errors.statusCode = 500;
 			}
