@@ -144,7 +144,7 @@ exports.updatePost = async (req, res, next) => {
 	//Async operations to update post
 	try {
 		//Check if post exists
-		const post = await Post.findById(postId);
+		const post = await (await Post.findById(postId)).populate('creator');
 		//If no post throw error
 		if (!post) {
 			const error = new Error('Could Not find any post.');
@@ -152,7 +152,7 @@ exports.updatePost = async (req, res, next) => {
 			throw error;
 		}
 		//Check if loggedIN user created this post else block access to update it
-		if (post.creator.toString() !== req.userId) {
+		if (post.creator._id.toString() !== req.userId) {
 			const error = new Error('Not authorized!');
 			error.statusCode = 403;
 			throw error;
@@ -166,6 +166,7 @@ exports.updatePost = async (req, res, next) => {
 		post.imageUrl = imageUrl;
 		post.content = content;
 		const saveResult = await post.save();
+		io.getIO().emit('posts', { action: 'update', post: saveResult });
 		res.status(200).json({ message: 'Post updated.', post: result });
 	} catch (err) {
 		if (!err.statusCode) {
