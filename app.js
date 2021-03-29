@@ -70,8 +70,15 @@ mongoose
 	)
 	.then((result) => {
 		console.log('Connected to the Database.');
-		app.listen(8080, (result) => {
+		//Store the server returned by the express app
+		const server = app.listen(8080, (result) => {
 			console.log('Listening for requests on port 8080');
+		});
+		//Pass the server as an argument to the function returned by socket.io and execute it
+		const io = require('socket.io')(server);
+		//Create an event listener for new connections and execute a function for each new connection
+		io.on('connection', (socket) => {
+			console.log('Client connected.');
 		});
 	})
 	.catch((err) => console.log(err));
