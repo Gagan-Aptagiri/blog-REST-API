@@ -3,6 +3,7 @@ const { validationResult } = require('express-validator');
 const path = require('path');
 const fs = require('fs');
 
+const io = require('../socket');
 const Post = require('../models/post');
 const User = require('../models/user');
 
@@ -66,14 +67,20 @@ exports.createPost = async (req, res, next) => {
 	//Async operations to save post and update it with the user's post property in MongoDB
 	try {
 		//Save post mongoose model
-		const postSaveResult = await post.save();
+		await post.save();
 		//Find user who created this post
 		const user = await User.findById(req.userId);
 		creator = user;
 		//Update the posts of that user in db
-		await user.posts.push(post);
+		user.posts.push(post);
 		//Save the user's updated state in the db
-		const userSaveResult = await user.save();
+		await user.save();
+		//Inform all the other client's connected to this server about the new created post and send the data
+		//which holds the keys action and post itself
+		io.getIO().emit('posts', {
+			action: 'create',
+			post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+		});
 		//Return REST API json response data providing the client info about WHO created the post
 		res.status(201).json({
 			message: 'Post has been successfully saved.',
